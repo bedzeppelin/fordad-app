@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { localDateString, formatTime, formatDate } from "@/lib/format";
 import { AppointmentIcon, MinusIcon, PlusBigIcon, WaterCupSvg } from "@/components/dad/icons";
+import NotificationsPrompt from "@/components/dad/NotificationsPrompt";
 import type { DadTodayData, DadScreen } from "@/components/dad/CompanionApp";
 
 const MOODS = [
@@ -75,6 +76,8 @@ export default function HomeScreen({
             <h1 style={{ fontSize: 38, fontWeight: 800, color: "#1C1814", lineHeight: 1.06, margin: "0 0 5px", letterSpacing: -1 }}>{greeting}</h1>
             <p style={{ fontSize: 14.5, color: "#AFA89F", margin: 0, fontWeight: 400 }}>{todayLabel}</p>
           </div>
+
+          <NotificationsPrompt />
 
           <div style={{ display: "flex", alignItems: "center", gap: 14, background: "#F6EDD6", borderRadius: 20, padding: "16px 18px", marginBottom: 16 }}>
             <span style={{ fontSize: 34, lineHeight: 1, flexShrink: 0 }}>🔥</span>

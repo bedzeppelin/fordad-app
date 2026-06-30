@@ -1,9 +1,8 @@
-// Minimal service worker: network-first with a cached-shell fallback so the
-// app still opens (read-only, last-known content) without a connection.
-// Push notifications are NOT wired up yet — that's a separate piece of the
-// spec (Section 3.6) that needs VAPID keys + a Vercel Cron job.
-const CACHE_NAME = "dad-app-shell-v1";
-const PRECACHE_URLS = ["/", "/manifest.json", "/icon.svg"];
+// Network-first with a cached-shell fallback so the app still opens
+// (read-only, last-known content) without a connection, plus Web Push
+// handlers for reminder/escalation/check-in notifications.
+const CACHE_NAME = "dad-app-shell-v2";
+const PRECACHE_URLS = ["/", "/manifest.json", "/icon-192.png", "/icon-512.png"];
 
 self.addEventListener("install", (event) => {
   event.waitUntil(caches.open(CACHE_NAME).then((cache) => cache.addAll(PRECACHE_URLS)));
@@ -31,5 +30,35 @@ self.addEventListener("fetch", (event) => {
         return res;
       })
       .catch(() => caches.match(request).then((cached) => cached || caches.match("/")))
+  );
+});
+
+self.addEventListener("push", (event) => {
+  let data = {};
+  try {
+    data = event.data ? event.data.json() : {};
+  } catch (e) {
+    data = { title: "Reminder", body: event.data ? event.data.text() : "" };
+  }
+  const title = data.title || "Reminder";
+  const options = {
+    body: data.body || "",
+    icon: "/icon-192.png",
+    badge: "/icon-192.png",
+    data: { url: data.url || "/" },
+  };
+  event.waitUntil(self.registration.showNotification(title, options));
+});
+
+self.addEventListener("notificationclick", (event) => {
+  event.notification.close();
+  const url = event.notification.data?.url || "/";
+  event.waitUntil(
+    self.clients.matchAll({ type: "window", includeUncontrolled: true }).then((clientList) => {
+      for (const client of clientList) {
+        if (client.url.includes(url) && "focus" in client) return client.focus();
+      }
+      if (self.clients.openWindow) return self.clients.openWindow(url);
+    })
   );
 });

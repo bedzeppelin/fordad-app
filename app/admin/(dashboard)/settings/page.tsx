@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { COLORS } from "@/lib/colors";
+import { pushSupported, subscribeToPush } from "@/lib/push-client";
 
 export default function SettingsPage() {
   const [patientName, setPatientName] = useState("");
@@ -14,6 +15,24 @@ export default function SettingsPage() {
   const [confirmPassword, setConfirmPassword] = useState("");
   const [savingPassword, setSavingPassword] = useState(false);
   const [passwordMessage, setPasswordMessage] = useState<{ ok: boolean; text: string } | null>(null);
+
+  const [notifStatus, setNotifStatus] = useState<"idle" | "enabling" | "on" | "denied" | "unsupported">("idle");
+
+  useEffect(() => {
+    if (!pushSupported()) {
+      setNotifStatus("unsupported");
+    } else if (Notification.permission === "granted") {
+      setNotifStatus("on");
+    } else if (Notification.permission === "denied") {
+      setNotifStatus("denied");
+    }
+  }, []);
+
+  async function enableNotifications() {
+    setNotifStatus("enabling");
+    const result = await subscribeToPush("admin", "Care Admin device");
+    setNotifStatus(result.ok ? "on" : result.reason === "denied" ? "denied" : "idle");
+  }
 
   useEffect(() => {
     fetch("/api/admin/settings")
@@ -135,6 +154,21 @@ export default function SettingsPage() {
             <span style={{ fontSize: 13, color: nameMessage.ok ? COLORS.green : COLORS.red, fontWeight: 500 }}>{nameMessage.text}</span>
           )}
         </div>
+      </div>
+
+      <div style={cardStyle}>
+        <p style={{ fontSize: 14, fontWeight: 700, color: COLORS.ink, margin: "0 0 14px" }}>Notifications</p>
+        <p style={{ fontSize: 13, color: COLORS.inkMuted, margin: "0 0 14px", lineHeight: 1.5 }}>
+          Get alerted on this device/browser if a task goes more than 2 hours past its scheduled time without being marked done.
+        </p>
+        {notifStatus === "unsupported" && <span style={{ fontSize: 13, color: COLORS.inkFaint }}>Not supported in this browser.</span>}
+        {notifStatus === "denied" && <span style={{ fontSize: 13, color: COLORS.red }}>Notifications are blocked — enable them in your browser's site settings.</span>}
+        {notifStatus === "on" && <span style={{ fontSize: 13, color: COLORS.green, fontWeight: 500 }}>✓ Notifications on for this device</span>}
+        {(notifStatus === "idle" || notifStatus === "enabling") && (
+          <button onClick={enableNotifications} disabled={notifStatus === "enabling"} style={saveBtnStyle(notifStatus === "enabling")}>
+            {notifStatus === "enabling" ? "Enabling…" : "Enable notifications on this device"}
+          </button>
+        )}
       </div>
 
       <div style={cardStyle}>

@@ -130,6 +130,23 @@ create table if not exists push_subscriptions (
 );
 
 -- ─────────────────────────────────────────────────────────────────────────
+-- push_notification_log — dedupes reminder/escalation/alert sends across
+-- the cron job's repeated runs (every few minutes).
+-- ─────────────────────────────────────────────────────────────────────────
+create table if not exists push_notification_log (
+  id                uuid primary key default gen_random_uuid(),
+  date              date not null,
+  notification_type text not null check (
+    notification_type in ('reminder', 'escalation_1', 'escalation_2', 'admin_alert', 'mood_reminder', 'checkin_reminder')
+  ),
+  -- todo id for task-related notifications; 'mood' or 'checkin' sentinel for the daily reminders.
+  target_id         text not null default 'none',
+  sent_at           timestamptz not null default now(),
+  unique (date, notification_type, target_id)
+);
+create index if not exists push_notification_log_date_idx on push_notification_log (date);
+
+-- ─────────────────────────────────────────────────────────────────────────
 -- admin_settings — single-row settings table
 -- ─────────────────────────────────────────────────────────────────────────
 create table if not exists admin_settings (
@@ -141,6 +158,7 @@ create table if not exists admin_settings (
 -- ─────────────────────────────────────────────────────────────────────────
 -- Row Level Security — lock every table to the service role only.
 -- ─────────────────────────────────────────────────────────────────────────
+alter table push_notification_log enable row level security;
 alter table todos              enable row level security;
 alter table todo_completions   enable row level security;
 alter table water_intake       enable row level security;

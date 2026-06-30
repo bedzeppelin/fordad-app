@@ -14,7 +14,13 @@ export const metadata: Metadata = {
   title: "Daily Companion",
   description: "A daily care companion app — tasks, calendar, check-ins, and voice notes",
   manifest: "/manifest.json",
-  icons: { icon: "/icon.svg", apple: "/icon.svg" },
+  icons: {
+    icon: [
+      { url: "/icon-192.png", sizes: "192x192", type: "image/png" },
+      { url: "/icon-512.png", sizes: "512x512", type: "image/png" },
+    ],
+    apple: "/icon-192.png",
+  },
   appleWebApp: { capable: true, statusBarStyle: "default", title: "Companion" },
 };
 

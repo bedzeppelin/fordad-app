@@ -46,8 +46,10 @@ async function logSent(date: string, type: string, targetId: string) {
 }
 
 export async function GET(req: NextRequest) {
-  // Vercel sends `Authorization: Bearer <CRON_SECRET>` automatically for
-  // configured cron routes once CRON_SECRET is set as an env var.
+  // Triggered by a GitHub Actions scheduled workflow (.github/workflows/push-cron.yml)
+  // rather than Vercel's own Cron — Hobby plan only allows daily-or-slower
+  // Vercel crons, and this needs ~5-minute granularity. The workflow sends
+  // the same CRON_SECRET as a bearer token.
   if (process.env.CRON_SECRET && req.headers.get("authorization") !== `Bearer ${process.env.CRON_SECRET}`) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }

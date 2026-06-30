@@ -19,7 +19,9 @@ Implementation of `dad-health-app-logic-spec.md`, matching the approved
 - Web Speech API for in-browser transcription (Chrome/Safari)
 - Gemini Flash for voice note summarization, with a heuristic fallback if no
   API key is configured
-- Web Push (VAPID) + Vercel Cron for scheduled reminders/escalations
+- Web Push (VAPID) + a GitHub Actions scheduled workflow for reminders/escalations
+  (not Vercel Cron — Hobby plan only allows daily-or-slower cron jobs, too
+  coarse for this)
 - PWA: manifest + service worker (offline shell caching + push handling)
 
 ## 1. Set up Supabase
@@ -91,7 +93,10 @@ or the Todos/Home/Reports screens will just show empty states.
 - Missed-task alert to the Admin's device at +2 hours
 - Mood check-in reminder by midday if not yet logged
 - Evening check-in reminder by 7pm if not yet submitted
-- Driven by `vercel.json`'s cron (`/api/push/cron`, every 5 minutes) — `lib/push.ts` sends via `web-push`, `push_notification_log` prevents duplicate sends across runs
+- Driven by [`.github/workflows/push-cron.yml`](.github/workflows/push-cron.yml)
+  (GitHub Actions, every 5 minutes) calling `/api/push/cron` with `CRON_SECRET`
+  as a bearer token — `lib/push.ts` sends via `web-push`, `push_notification_log`
+  prevents duplicate sends across runs
 
 ## Not built yet / open items
 
@@ -102,27 +107,31 @@ or the Todos/Home/Reports screens will just show empty states.
    crops the icon oddly on some launchers.
 2. **Open spec decisions** (§8) — Calendar List view scope, and the optional
    health metrics log — still unresolved, per the spec's own flag.
-3. **Vercel Hobby cron frequency.** The free tier's allowed cron interval has
-   changed over time — if Vercel rejects `*/5 * * * *` on deploy, widen it in
-   `vercel.json` (e.g. every 15 min); the reminder windows tolerate that fine,
-   just less precisely timed.
 
 ## Generating the APK
 
 1. **Deploy to Vercel.** Import the GitHub repo at vercel.com, set every env
-   var from `.env.local` (including the VAPID keys, `CRON_SECRET` — pick a
-   new random value here, Vercel sends it back as the `Authorization` header
-   automatically — and `TIMEZONE`), deploy.
+   var from `.env.local` (Supabase URL/key, `ADMIN_SESSION_SECRET`,
+   `GEMINI_API_KEY`, both VAPID keys, `VAPID_SUBJECT`, `CRON_SECRET`,
+   `TIMEZONE`), deploy. There's no `vercel.json` anymore, so nothing
+   cron-related can block the deploy.
 2. Run `npm run seed:admin -- --password "..."` once against production
    (either locally with `.env.local` pointed at the same Supabase project, or
    via `vercel env pull` first) so Care Admin has a password.
-3. Confirm the deployed site passes Lighthouse's installability check
+3. **Turn on the reminder cron:** in the GitHub repo, go to
+   Settings → Secrets and variables → Actions:
+   - Add secret `CRON_SECRET` = the same value as in Vercel.
+   - Add variable `APP_URL` = your deployed Vercel URL (e.g.
+     `https://fordad-app.vercel.app`, no trailing slash).
+   The workflow runs automatically every 5 minutes once both are set; you can
+   also trigger it manually from the Actions tab ("Run workflow") to test it.
+4. Confirm the deployed site passes Lighthouse's installability check
    (Chrome DevTools → Lighthouse → PWA).
-4. Go to **[pwabuilder.com](https://www.pwabuilder.com)**, paste the deployed
+5. Go to **[pwabuilder.com](https://www.pwabuilder.com)**, paste the deployed
    URL, and generate the **Android (TWA)** package.
-5. Download the APK and send it to Dad's Pixel 4XL — install it directly
+6. Download the APK and send it to Dad's Pixel 4XL — install it directly
    (Settings → allow installs from unknown sources, once; not from the Play
    Store).
-6. **First-launch setup:** on his phone, go to Settings → Apps → Chrome →
+7. **First-launch setup:** on his phone, go to Settings → Apps → Chrome →
    Battery → set to **Unrestricted**, so Android doesn't kill background push
    delivery (per spec §7).

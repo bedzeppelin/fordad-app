@@ -1,6 +1,7 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { DM_Sans } from "next/font/google";
 import "./globals.css";
+import ServiceWorkerRegister from "@/components/ServiceWorkerRegister";
 
 const dmSans = DM_Sans({
   subsets: ["latin"],
@@ -10,14 +11,28 @@ const dmSans = DM_Sans({
 });
 
 export const metadata: Metadata = {
-  title: "Care Admin",
-  description: "Manage daily care plan, calendar, and check-ins",
+  title: "Daily Companion",
+  description: "A daily care companion app — tasks, calendar, check-ins, and voice notes",
+  manifest: "/manifest.json",
+  icons: { icon: "/icon.svg", apple: "/icon.svg" },
+  appleWebApp: { capable: true, statusBarStyle: "default", title: "Companion" },
+};
+
+export const viewport: Viewport = {
+  themeColor: "#2B4D8C",
+  width: "device-width",
+  initialScale: 1,
+  maximumScale: 1,
+  userScalable: false,
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en" className={dmSans.variable}>
-      <body style={{ fontFamily: "var(--font-dm-sans), system-ui, sans-serif" }}>{children}</body>
+      <body style={{ fontFamily: "var(--font-dm-sans), system-ui, sans-serif" }}>
+        {children}
+        <ServiceWorkerRegister />
+      </body>
     </html>
   );
 }

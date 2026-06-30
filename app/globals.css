@@ -34,3 +34,15 @@ select {
     transform: translateY(0) scale(1);
   }
 }
+
+@keyframes micPulse {
+  0% {
+    box-shadow: 0 0 0 0 rgba(168, 72, 72, 0.45);
+  }
+  70% {
+    box-shadow: 0 0 0 22px rgba(168, 72, 72, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(168, 72, 72, 0);
+  }
+}

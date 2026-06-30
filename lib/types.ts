@@ -55,3 +55,62 @@ export interface ActivityLogEntry {
 export interface AdminSettingsPublic {
   patient_name: string;
 }
+
+// ─── Dad's companion app ───────────────────────────────────────────────
+
+export interface DadTodoItem extends Todo {
+  completed: boolean;
+}
+
+export interface DadUpcomingEvent {
+  id: string;
+  title: string;
+  date: string;
+  time: string;
+  notes: string | null;
+}
+
+export interface DadTodayData {
+  patientName: string;
+  todos: DadTodoItem[];
+  completedCount: number;
+  totalCount: number;
+  streak: number;
+  weekBars: number[]; // 7 entries, Sun-Sat
+  upcomingEvents: DadUpcomingEvent[];
+  water: { count: number; target: number };
+  mood: { submitted: boolean; value: string | null };
+  checkin: {
+    submitted: boolean;
+    overall_day_rating?: number | null;
+    energy_level?: string | null;
+    pain_discomfort?: string | null;
+    sleep_quality?: string | null;
+  };
+}
+
+export interface DadCalendarItem {
+  kind: "todo" | "event" | "note";
+  id: string;
+  label: string;
+  time: string;
+  icon?: string;
+  type?: string;
+  notes?: string | null;
+}
+
+export interface DadCalendarDay {
+  date: string;
+  dayName: string;
+  dayNum: number;
+  monthName: string;
+  isToday: boolean;
+  items: DadCalendarItem[];
+}
+
+export interface DadVoiceNote {
+  id: string;
+  date: string;
+  recorded_at: string;
+  summary_bullets: string[];
+}

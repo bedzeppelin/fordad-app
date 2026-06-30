@@ -1,3 +1,11 @@
+/** Today's date as "YYYY-MM-DD" in the *caller's* local timezone (not UTC). */
+export function localDateString(d: Date = new Date()): string {
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${y}-${m}-${day}`;
+}
+
 /** "08:00" or "08:00:00" -> "8:00 AM" */
 export function formatTime(t: string | null | undefined): string {
   if (!t) return "";

@@ -17,6 +17,7 @@ export default function SettingsPage() {
   const [passwordMessage, setPasswordMessage] = useState<{ ok: boolean; text: string } | null>(null);
 
   const [notifStatus, setNotifStatus] = useState<"idle" | "enabling" | "on" | "denied" | "unsupported">("idle");
+  const [testStatus, setTestStatus] = useState<"idle" | "sending" | "sent" | "error">("idle");
 
   useEffect(() => {
     if (!pushSupported()) {
@@ -32,6 +33,13 @@ export default function SettingsPage() {
     setNotifStatus("enabling");
     const result = await subscribeToPush("admin", "Care Admin device");
     setNotifStatus(result.ok ? "on" : result.reason === "denied" ? "denied" : "idle");
+  }
+
+  async function sendTestNotification() {
+    setTestStatus("sending");
+    const res = await fetch("/api/push/test", { method: "POST" });
+    setTestStatus(res.ok ? "sent" : "error");
+    setTimeout(() => setTestStatus("idle"), 3000);
   }
 
   useEffect(() => {
@@ -169,6 +177,31 @@ export default function SettingsPage() {
             {notifStatus === "enabling" ? "Enabling…" : "Enable notifications on this device"}
           </button>
         )}
+      </div>
+
+      <div style={cardStyle}>
+        <p style={{ fontSize: 14, fontWeight: 700, color: COLORS.ink, margin: "0 0 6px" }}>Test notification</p>
+        <p style={{ fontSize: 13, color: COLORS.inkMuted, margin: "0 0 14px", lineHeight: 1.5 }}>
+          Send a test push to Dad&apos;s device right now to confirm notifications are working.
+          His app must be installed and he must have tapped &ldquo;Turn on reminders&rdquo; first.
+        </p>
+        <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+          <button
+            onClick={sendTestNotification}
+            disabled={testStatus === "sending"}
+            style={saveBtnStyle(testStatus === "sending")}
+          >
+            {testStatus === "sending" ? "Sending…" : "Send test notification"}
+          </button>
+          {testStatus === "sent" && (
+            <span style={{ fontSize: 13, color: COLORS.green, fontWeight: 500 }}>✓ Sent — check his phone</span>
+          )}
+          {testStatus === "error" && (
+            <span style={{ fontSize: 13, color: COLORS.red, fontWeight: 500 }}>
+              Failed — make sure VAPID keys are set in Vercel env vars
+            </span>
+          )}
+        </div>
       </div>
 
       <div style={cardStyle}>

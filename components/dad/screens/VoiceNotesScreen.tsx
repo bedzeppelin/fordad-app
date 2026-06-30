@@ -67,10 +67,15 @@ export default function VoiceNotesScreen({ active }: { active: boolean }) {
       if (e.error !== "aborted") {
         setSpeechError("Could not access microphone");
         setIsRecording(false);
+        recognitionRef.current = null;
       }
     };
+    // Don't restart on end — that's what was causing words to repeat at
+    // the boundary between sessions. Let continuous:true keep the mic
+    // open naturally; if Chrome stops due to long silence, Dad taps again.
     recognition.onend = () => {
-      if (recognitionRef.current) recognitionRef.current.start();
+      setIsRecording(false);
+      recognitionRef.current = null;
     };
     recognition.start();
   }

@@ -160,8 +160,10 @@ export default function HomeScreen({
                 </div>
               ))}
             </div>
-            <p style={{ fontSize: 13, color: "#AFA89F", margin: 0 }}>
-              {water.count} of {water.target} glasses
+            <p style={{ fontSize: 13, color: water.count >= water.target ? "#2E8050" : "#AFA89F", fontWeight: water.count >= water.target ? 600 : 400, margin: 0 }}>
+              {water.count >= water.target
+                ? "💧 Water goal complete for today!"
+                : `${water.count} of ${water.target} glasses`}
             </p>
           </div>
 

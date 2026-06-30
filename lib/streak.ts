@@ -37,6 +37,11 @@ export async function computeStreakAndToday(
   const { data: todos } = await supabaseAdmin.from("todos").select("id, recurrence_days").eq("active", true);
   const allTodos = (todos ?? []) as TodoLite[];
 
+  // No todos at all → streak is 0, nothing to complete.
+  if (allTodos.length === 0) {
+    return { streak: 0, todayCompletedCount: 0, todayTotalCount: 0 };
+  }
+
   const earliest = addDays(todayDate, -60);
   const { data: completions } = await supabaseAdmin
     .from("todo_completions")

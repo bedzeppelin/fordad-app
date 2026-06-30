@@ -5,9 +5,20 @@ import { weekdayForDate } from "@/lib/streak";
 
 export const dynamic = "force-dynamic";
 
-// How often Vercel Cron actually invokes this route (see vercel.json). Used
-// as the tolerance window when matching a threshold like "+30 minutes".
+// Cron runs every 5 minutes via GitHub Actions (.github/workflows/push-cron.yml).
 const WINDOW_MINUTES = 5;
+
+// 8 water reminders spread through the day (minutes since midnight).
+const WATER_REMINDER_TIMES = [
+  8 * 60,           // 8:00 AM
+  9 * 60 + 30,      // 9:30 AM
+  11 * 60,          // 11:00 AM
+  12 * 60 + 30,     // 12:30 PM
+  14 * 60,          // 2:00 PM
+  15 * 60 + 30,     // 3:30 PM
+  17 * 60,          // 5:00 PM
+  19 * 60,          // 7:00 PM
+];
 
 function nowInTimezone(tz: string): { date: string; minutesOfDay: number } {
   const fmt = new Intl.DateTimeFormat("en-CA", {
@@ -46,10 +57,6 @@ async function logSent(date: string, type: string, targetId: string) {
 }
 
 export async function GET(req: NextRequest) {
-  // Triggered by a GitHub Actions scheduled workflow (.github/workflows/push-cron.yml)
-  // rather than Vercel's own Cron — Hobby plan only allows daily-or-slower
-  // Vercel crons, and this needs ~5-minute granularity. The workflow sends
-  // the same CRON_SECRET as a bearer token.
   if (process.env.CRON_SECRET && req.headers.get("authorization") !== `Bearer ${process.env.CRON_SECRET}`) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
@@ -76,7 +83,7 @@ export async function GET(req: NextRequest) {
     if (completedIds.has(todo.id)) continue;
     const scheduledMin = timeStrToMinutes(todo.scheduled_time);
     const elapsed = minutesOfDay - scheduledMin;
-    if (elapsed < 0) continue; // not due yet today
+    if (elapsed < 0) continue;
     const title = todo.short_title || todo.title.replace(/\n/g, " ");
 
     if (elapsed < WINDOW_MINUTES && !(await alreadySent(date, "reminder", todo.id))) {
@@ -98,6 +105,26 @@ export async function GET(req: NextRequest) {
     }
   }
 
+  // ── Water reminders — 8 times a day, skip if goal already reached ──
+  for (const waterMin of WATER_REMINDER_TIMES) {
+    if (!inWindow(waterMin)) continue;
+    const slotId = `water_${String(Math.floor(waterMin / 60)).padStart(2, "0")}${String(waterMin % 60).padStart(2, "0")}`;
+    if (await alreadySent(date, "water_reminder", slotId)) continue;
+
+    const { data: waterRow } = await supabaseAdmin.from("water_intake").select("count, target").eq("date", date).maybeSingle();
+    const count = waterRow?.count ?? 0;
+    const target = waterRow?.target ?? 8;
+    if (count >= target) continue; // already hit the goal, no need to nag
+
+    await sendPushToRole("dad", {
+      title: "Time for a glass of water 💧",
+      body: `${count} of ${target} glasses so far today`,
+      url: "/",
+    });
+    await logSent(date, "water_reminder", slotId);
+    sent.push(`water_reminder:${slotId}`);
+  }
+
   // ── Mood check-in reminder (by midday, once) ──
   if (inWindow(12 * 60)) {
     const { data: mood } = await supabaseAdmin.from("mood_checkins").select("id").eq("date", date).maybeSingle();
@@ -108,11 +135,11 @@ export async function GET(req: NextRequest) {
     }
   }
 
-  // ── Evening check-in reminder (by 7pm, once) ──
-  if (inWindow(19 * 60)) {
+  // ── Evening check-in reminder (9pm, once) ──
+  if (inWindow(21 * 60)) {
     const { data: checkin } = await supabaseAdmin.from("daily_checkins").select("id").eq("date", date).maybeSingle();
     if (!checkin && !(await alreadySent(date, "checkin_reminder", "checkin"))) {
-      await sendPushToRole("dad", { title: "Daily check-in", body: "How was your day? Takes a minute.", url: "/" });
+      await sendPushToRole("dad", { title: "Daily reflection", body: "How was your day? Takes just a minute.", url: "/" });
       await logSent(date, "checkin_reminder", "checkin");
       sent.push("checkin_reminder");
     }

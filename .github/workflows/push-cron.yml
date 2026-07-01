@@ -11,5 +11,7 @@ jobs:
     steps:
       - name: Call /api/push/cron
         run: |
-          curl -fsS -X GET "https://fordad-app.vercel.app/api/push/cron" \
-            -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}"
+          curl -sS -X GET "https://fordad-app.vercel.app/api/push/cron" \
+            -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}" \
+            --write-out "\nHTTP status: %{http_code}" \
+            --fail-with-body

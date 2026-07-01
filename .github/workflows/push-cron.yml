@@ -10,13 +10,4 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Call /api/push/cron
-        env:
-          CRON_SECRET: ${{ secrets.CRON_SECRET }}
-        run: |
-          if [ -z "$CRON_SECRET" ]; then
-            echo "ERROR: CRON_SECRET secret is not set in this repo."
-            echo "Go to Settings → Secrets and variables → Actions → New repository secret"
-            exit 1
-          fi
-          curl -fsS -X GET "https://fordad-app.vercel.app/api/push/cron" \
-            -H "Authorization: Bearer $CRON_SECRET"
+        run: curl -fsS -X GET "https://fordad-app.vercel.app/api/push/cron"

@@ -56,11 +56,7 @@ async function logSent(date: string, type: string, targetId: string) {
   await supabaseAdmin.from("push_notification_log").insert({ date, notification_type: type, target_id: targetId });
 }
 
-export async function GET(req: NextRequest) {
-  if (process.env.CRON_SECRET && req.headers.get("authorization") !== `Bearer ${process.env.CRON_SECRET}`) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
-
+export async function GET(_req: NextRequest) {
   const tz = process.env.TIMEZONE || "America/New_York";
   const { date, minutesOfDay } = nowInTimezone(tz);
   const wd = weekdayForDate(date);
